@@ -1,0 +1,38 @@
+{
+  "app": {
+    "title": "InkView",
+    "loading": "Loading...",
+    "loadingEngine": "Initializing PDF engine...",
+    "error": "An error occurred"
+  },
+  "toolbar": {
+    "open": "Open",
+    "close": "Close",
+    "zoomIn": "Zoom In",
+    "zoomOut": "Zoom Out",
+    "fitWidth": "Fit Width",
+    "fitPage": "Fit Page",
+    "prevPage": "Previous Page",
+    "nextPage": "Next Page",
+    "rotate": "Rotate",
+    "spread": "Spread View",
+    "fullscreen": "Fullscreen",
+    "search": "Search",
+    "split": "Split",
+    "merge": "Merge",
+    "bookmark": "Add Bookmark",
+    "export": "Export",
+    "annotation": "Annotate"
+  },
+  "sidebar": {
+    "thumbnails": "Thumbnails",
+    "bookmarks": "Bookmarks",
+    "outline": "Outline",
+    "noDocument": "Open a PDF file"
+  },
+  "statusbar": {
+    "page": "Page",
+    "of": "/",
+    "zoom": "Zoom"
+  }
+}

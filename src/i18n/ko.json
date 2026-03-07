@@ -1,0 +1,76 @@
+{
+  "app": {
+    "title": "InkView",
+    "loading": "로딩 중...",
+    "loadingEngine": "PDF 엔진 초기화 중...",
+    "error": "오류가 발생했습니다"
+  },
+  "toolbar": {
+    "open": "열기",
+    "close": "닫기",
+    "zoomIn": "확대",
+    "zoomOut": "축소",
+    "fitWidth": "너비 맞춤",
+    "fitPage": "페이지 맞춤",
+    "prevPage": "이전 페이지",
+    "nextPage": "다음 페이지",
+    "rotate": "회전",
+    "spread": "양면 보기",
+    "fullscreen": "전체화면",
+    "search": "검색",
+    "split": "분할",
+    "merge": "병합",
+    "bookmark": "책갈피 추가",
+    "export": "내보내기",
+    "annotation": "주석"
+  },
+  "sidebar": {
+    "thumbnails": "썸네일",
+    "bookmarks": "책갈피",
+    "outline": "목차",
+    "noDocument": "PDF 파일을 열어주세요"
+  },
+  "statusbar": {
+    "page": "페이지",
+    "of": "/",
+    "zoom": "확대"
+  },
+  "bookmark": {
+    "title": "책갈피",
+    "add": "책갈피 추가",
+    "delete": "삭제",
+    "edit": "편집",
+    "export": "내보내기",
+    "import": "가져오기",
+    "empty": "책갈피가 없습니다",
+    "pdfOutline": "PDF 목차",
+    "userBookmarks": "내 책갈피",
+    "namePlaceholder": "책갈피 이름"
+  },
+  "split": {
+    "title": "PDF 분할",
+    "rangeLabel": "페이지 범위",
+    "rangePlaceholder": "예: 1-5, 8, 10-15",
+    "preview": "미리보기",
+    "execute": "분할 실행",
+    "cancel": "취소",
+    "outputName": "출력 파일명",
+    "selectPages": "페이지를 선택하세요"
+  },
+  "merge": {
+    "title": "PDF 병합",
+    "addFiles": "파일 추가",
+    "dropzone": "PDF 파일을 여기에 드래그하세요",
+    "execute": "병합 실행",
+    "cancel": "취소",
+    "outputName": "출력 파일명",
+    "autoBookmark": "파일명을 책갈피로 추가",
+    "noFiles": "병합할 파일을 추가하세요",
+    "pageRange": "페이지 범위"
+  },
+  "dialog": {
+    "confirm": "확인",
+    "cancel": "취소",
+    "close": "닫기"
+  }
+}
