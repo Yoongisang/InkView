@@ -1,5 +1,5 @@
 import { useState, useCallback, type ReactNode } from 'react';
-import { EmbedPDF } from '@embedpdf/core/react';
+import { EmbedPDF, type PluginBatchRegistrations } from '@embedpdf/core/react';
 import { usePdfiumEngine } from '@embedpdf/engines/react';
 import type { PluginRegistry } from '@embedpdf/core';
 import { useTranslation } from 'react-i18next';
@@ -43,7 +43,7 @@ export function ViewerProvider({ children }: ViewerProviderProps) {
   return (
     <EmbedPDF
       engine={engine}
-      plugins={plugins}
+      plugins={plugins as unknown as PluginBatchRegistrations}
       onInitialized={handleInitialized}
     >
       {children}

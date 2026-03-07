@@ -1,5 +1,3 @@
-import type { PluginBatchRegistrations } from '@embedpdf/core/react';
-
 import { ViewportPluginPackage } from '@embedpdf/plugin-viewport';
 import { ScrollPluginPackage } from '@embedpdf/plugin-scroll';
 import { RenderPluginPackage } from '@embedpdf/plugin-render';
@@ -22,7 +20,8 @@ import { BookmarkPluginPackage } from '@embedpdf/plugin-bookmark';
 import { UIPluginPackage } from '@embedpdf/plugin-ui';
 import { ViewManagerPluginPackage } from '@embedpdf/plugin-view-manager';
 
-export const plugins: PluginBatchRegistrations = [
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const plugins = [
   { package: ViewportPluginPackage },
   { package: InteractionManagerPluginPackage },
   { package: ScrollPluginPackage },

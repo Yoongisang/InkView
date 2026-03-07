@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
-import { useTranslation } from 'react-i18next';
 import { useRegistry } from '@embedpdf/core/react';
+import { useTranslation } from 'react-i18next';
 import { Viewport } from '@embedpdf/plugin-viewport/react';
 import { Scroller } from '@embedpdf/plugin-scroll/react';
 import { RenderLayer } from '@embedpdf/plugin-render/react';
@@ -11,7 +11,6 @@ import { Sidebar } from './Sidebar';
 import { StatusBar } from './StatusBar';
 
 export function AppLayout() {
-  const { t } = useTranslation();
   const { activeDocumentId } = useRegistry();
   const [sidebarVisible, setSidebarVisible] = useState(true);
   const [, setSearchVisible] = useState(false);

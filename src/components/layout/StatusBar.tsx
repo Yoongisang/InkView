@@ -4,7 +4,6 @@ import { useScroll } from '@embedpdf/plugin-scroll/react';
 import { useZoom } from '@embedpdf/plugin-zoom/react';
 
 export function StatusBar() {
-  const { t } = useTranslation();
   const { activeDocumentId, activeDocument } = useRegistry();
 
   if (!activeDocumentId) {

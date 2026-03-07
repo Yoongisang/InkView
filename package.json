@@ -8,7 +8,8 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "test": "vitest"
+    "test": "vitest",
+    "postinstall": "node -e \"const fs=require('fs');const s='node_modules/@embedpdf/pdfium/dist/pdfium.wasm';const d='public/pdfium/pdfium.wasm';if(fs.existsSync(s)){fs.mkdirSync('public/pdfium',{recursive:true});fs.copyFileSync(s,d);}\""
   },
   "dependencies": {
     "react": "^18.3.1",

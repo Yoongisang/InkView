@@ -2,11 +2,11 @@ import { useTranslation } from 'react-i18next';
 import { useDocumentManagerCapability } from '@embedpdf/plugin-document-manager/react';
 import { useZoomCapability } from '@embedpdf/plugin-zoom/react';
 import { useRegistry } from '@embedpdf/core/react';
-import { useScroll } from '@embedpdf/plugin-scroll/react';
+import { useScrollCapability } from '@embedpdf/plugin-scroll/react';
 import { useRotateCapability } from '@embedpdf/plugin-rotate/react';
 import { useFullscreenCapability } from '@embedpdf/plugin-fullscreen/react';
 import {
-  FileOpen,
+  FolderOpen,
   ZoomIn,
   ZoomOut,
   ChevronLeft,
@@ -38,32 +38,19 @@ export function Toolbar({
   const { activeDocumentId } = useRegistry();
   const { provides: docManager } = useDocumentManagerCapability();
   const { provides: zoom } = useZoomCapability();
+  const { provides: scroll } = useScrollCapability();
   const { provides: rotate } = useRotateCapability();
   const { provides: fullscreen } = useFullscreenCapability();
 
-  const scroll = activeDocumentId
-    ? useScroll(activeDocumentId)
-    : { state: { currentPage: 0, totalPages: 0 }, provides: null };
-
-  const handleOpenFile = () => {
-    docManager?.openFileDialog();
-  };
-
-  const handlePrevPage = () => {
-    scroll.provides?.goToPreviousPage();
-  };
-
-  const handleNextPage = () => {
-    scroll.provides?.goToNextPage();
-  };
+  const hasDoc = !!activeDocumentId;
 
   return (
     <div className="flex h-12 items-center gap-1 border-b border-border bg-toolbar-bg px-3">
       {/* File */}
       <ToolbarButton
-        icon={<FileOpen size={18} />}
+        icon={<FolderOpen size={18} />}
         label={t('toolbar.open')}
-        onClick={handleOpenFile}
+        onClick={() => docManager?.openFileDialog()}
       />
 
       <ToolbarDivider />
@@ -72,19 +59,14 @@ export function Toolbar({
       <ToolbarButton
         icon={<ChevronLeft size={18} />}
         label={t('toolbar.prevPage')}
-        onClick={handlePrevPage}
-        disabled={!activeDocumentId}
+        onClick={() => scroll?.scrollToPreviousPage()}
+        disabled={!hasDoc}
       />
-      <span className="min-w-[80px] text-center text-sm text-text-muted">
-        {activeDocumentId
-          ? `${scroll.state.currentPage + 1} ${t('statusbar.of')} ${scroll.state.totalPages}`
-          : '-'}
-      </span>
       <ToolbarButton
         icon={<ChevronRight size={18} />}
         label={t('toolbar.nextPage')}
-        onClick={handleNextPage}
-        disabled={!activeDocumentId}
+        onClick={() => scroll?.scrollToNextPage()}
+        disabled={!hasDoc}
       />
 
       <ToolbarDivider />
@@ -94,13 +76,13 @@ export function Toolbar({
         icon={<ZoomOut size={18} />}
         label={t('toolbar.zoomOut')}
         onClick={() => zoom?.zoomOut()}
-        disabled={!activeDocumentId}
+        disabled={!hasDoc}
       />
       <ToolbarButton
         icon={<ZoomIn size={18} />}
         label={t('toolbar.zoomIn')}
         onClick={() => zoom?.zoomIn()}
-        disabled={!activeDocumentId}
+        disabled={!hasDoc}
       />
 
       <ToolbarDivider />
@@ -109,13 +91,13 @@ export function Toolbar({
       <ToolbarButton
         icon={<RotateCw size={18} />}
         label={t('toolbar.rotate')}
-        onClick={() => rotate?.rotateClockwise()}
-        disabled={!activeDocumentId}
+        onClick={() => rotate?.rotateForward()}
+        disabled={!hasDoc}
       />
       <ToolbarButton
         icon={<Maximize size={18} />}
         label={t('toolbar.fullscreen')}
-        onClick={() => fullscreen?.toggle()}
+        onClick={() => fullscreen?.toggleFullscreen()}
       />
 
       <ToolbarDivider />
@@ -125,7 +107,7 @@ export function Toolbar({
         icon={<Search size={18} />}
         label={t('toolbar.search')}
         onClick={onToggleSearch}
-        disabled={!activeDocumentId}
+        disabled={!hasDoc}
       />
 
       {/* Bookmark */}
@@ -133,7 +115,7 @@ export function Toolbar({
         icon={<Bookmark size={18} />}
         label={t('toolbar.bookmark')}
         onClick={onAddBookmark}
-        disabled={!activeDocumentId}
+        disabled={!hasDoc}
       />
 
       <div className="flex-1" />
@@ -143,7 +125,7 @@ export function Toolbar({
         icon={<Scissors size={18} />}
         label={t('toolbar.split')}
         onClick={onOpenSplit}
-        disabled={!activeDocumentId}
+        disabled={!hasDoc}
       />
       <ToolbarButton
         icon={<Merge size={18} />}
