@@ -1,5 +1,4 @@
 import { useTranslation } from 'react-i18next';
-import { useDocumentManagerCapability } from '@embedpdf/plugin-document-manager/react';
 import { useZoomCapability } from '@embedpdf/plugin-zoom/react';
 import { useRegistry } from '@embedpdf/core/react';
 import { useScrollCapability } from '@embedpdf/plugin-scroll/react';
@@ -24,7 +23,7 @@ interface ToolbarProps {
   onToggleSidebar: () => void;
   onOpenSplit: () => void;
   onOpenMerge: () => void;
-  onAddBookmark: () => void;
+  onOpenFile: () => void;
 }
 
 export function Toolbar({
@@ -32,11 +31,10 @@ export function Toolbar({
   onToggleSidebar,
   onOpenSplit,
   onOpenMerge,
-  onAddBookmark,
+  onOpenFile,
 }: ToolbarProps) {
   const { t } = useTranslation();
   const { activeDocumentId } = useRegistry();
-  const { provides: docManager } = useDocumentManagerCapability();
   const { provides: zoom } = useZoomCapability();
   const { provides: scroll } = useScrollCapability();
   const { provides: rotate } = useRotateCapability();
@@ -50,7 +48,7 @@ export function Toolbar({
       <ToolbarButton
         icon={<FolderOpen size={18} />}
         label={t('toolbar.open')}
-        onClick={() => docManager?.openFileDialog()}
+        onClick={onOpenFile}
       />
 
       <ToolbarDivider />
@@ -114,7 +112,11 @@ export function Toolbar({
       <ToolbarButton
         icon={<Bookmark size={18} />}
         label={t('toolbar.bookmark')}
-        onClick={onAddBookmark}
+        onClick={() => {
+          // Bookmark add is handled by Ctrl+D; this button is a convenience trigger
+          const event = new KeyboardEvent('keydown', { key: 'd', ctrlKey: true, bubbles: true });
+          window.dispatchEvent(event);
+        }}
         disabled={!hasDoc}
       />
 

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useRegistry } from '@embedpdf/core/react';
 import { Image, Bookmark, List } from 'lucide-react';
+import { BookmarkPanel } from '../../plugins/bookmark';
 
 type SidebarTab = 'thumbnails' | 'bookmarks' | 'outline';
 
@@ -95,13 +96,7 @@ function ThumbnailsPanel() {
 }
 
 function BookmarksPanel() {
-  const { t } = useTranslation();
-  return (
-    <div className="text-sm text-text-muted">
-      {/* Phase 2에서 커스텀 BookmarkPanel로 교체 */}
-      <p className="py-4 text-center">{t('bookmark.empty')}</p>
-    </div>
-  );
+  return <BookmarkPanel />;
 }
 
 function OutlinePanel() {

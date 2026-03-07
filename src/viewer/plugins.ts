@@ -19,6 +19,7 @@ import { CapturePluginPackage } from '@embedpdf/plugin-capture';
 import { BookmarkPluginPackage } from '@embedpdf/plugin-bookmark';
 import { UIPluginPackage } from '@embedpdf/plugin-ui';
 import { ViewManagerPluginPackage } from '@embedpdf/plugin-view-manager';
+import { UserBookmarkPluginPackage } from '../plugins/bookmark';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const plugins = [
@@ -43,4 +44,5 @@ export const plugins = [
   { package: BookmarkPluginPackage },
   { package: UIPluginPackage },
   { package: ViewManagerPluginPackage },
+  { package: UserBookmarkPluginPackage },
 ];
