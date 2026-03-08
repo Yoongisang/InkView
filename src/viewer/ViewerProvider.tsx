@@ -13,7 +13,9 @@ export function ViewerProvider({ children }: ViewerProviderProps) {
   const { t } = useTranslation();
   const { engine, isLoading, error } = usePdfiumEngine({
     wasmUrl: '/pdfium/pdfium.wasm',
-    worker: true,
+    // worker mode requires SharedArrayBuffer (COOP/COEP headers).
+    // Fall back to main-thread mode when crossOriginIsolated is not set.
+    worker: !!window.crossOriginIsolated,
   });
   const [, setRegistry] = useState<PluginRegistry | null>(null);
 
