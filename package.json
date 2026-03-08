@@ -20,12 +20,7 @@
     "directories": { "output": "release" },
     "files": ["electron/main.js"],
     "extraResources": [{ "from": "dist", "to": "dist" }],
-    "win": { "target": "nsis" },
-    "nsis": {
-      "oneClick": false,
-      "allowToChangeInstallationDirectory": true,
-      "language": "1042"
-    }
+    "win": { "target": "portable" }
   },
   "dependencies": {
     "@embedpdf/core": "^2.8.0",
