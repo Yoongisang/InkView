@@ -12,12 +12,16 @@ import { Sidebar } from './Sidebar';
 import { StatusBar } from './StatusBar';
 import { useOpenFile } from '../../hooks/useOpenFile';
 import { UserBookmarkPlugin } from '../../plugins/bookmark';
+import { SplitDialog, usePdfBytes } from '../../plugins/split';
 
 export function AppLayout() {
   const { activeDocumentId } = useRegistry();
   const [sidebarVisible, setSidebarVisible] = useState(true);
   const [, setSearchVisible] = useState(false);
+  const [splitOpen, setSplitOpen] = useState(false);
+  const [totalPages, setTotalPages] = useState(0);
   const { openFile, inputRef, handleFileChange } = useOpenFile();
+  const { pdfBytes, baseName } = usePdfBytes(activeDocumentId);
 
   const toggleSidebar = useCallback(() => {
     setSidebarVisible((v) => !v);
@@ -27,7 +31,7 @@ export function AppLayout() {
     setSearchVisible((v) => !v);
   }, []);
 
-  // Ctrl+B: toggle sidebar
+  // Global keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.ctrlKey && e.key === 'b') {
@@ -38,10 +42,14 @@ export function AppLayout() {
         e.preventDefault();
         openFile();
       }
+      if (e.ctrlKey && e.shiftKey && e.key === 'S') {
+        e.preventDefault();
+        if (activeDocumentId) setSplitOpen(true);
+      }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [openFile]);
+  }, [openFile, activeDocumentId]);
 
   const renderPage = useCallback(
     (page: PageLayout) => {
@@ -57,10 +65,7 @@ export function AppLayout() {
             height: page.rotatedHeight,
           }}
         >
-          <TilingLayer
-            documentId={activeDocumentId}
-            pageIndex={page.pageIndex}
-          />
+          <TilingLayer documentId={activeDocumentId} pageIndex={page.pageIndex} />
           <RenderLayer
             documentId={activeDocumentId}
             pageIndex={page.pageIndex}
@@ -86,7 +91,7 @@ export function AppLayout() {
       <Toolbar
         onToggleSearch={toggleSearch}
         onToggleSidebar={toggleSidebar}
-        onOpenSplit={() => {}}
+        onOpenSplit={() => setSplitOpen(true)}
         onOpenMerge={() => {}}
         onOpenFile={openFile}
       />
@@ -99,6 +104,7 @@ export function AppLayout() {
             <ViewerWithShortcuts
               documentId={activeDocumentId}
               renderPage={renderPage}
+              onTotalPagesChange={setTotalPages}
             />
           ) : (
             <EmptyState />
@@ -107,21 +113,37 @@ export function AppLayout() {
       </div>
 
       <StatusBar />
+
+      {/* Dialogs */}
+      <SplitDialog
+        open={splitOpen}
+        onClose={() => setSplitOpen(false)}
+        pdfBytes={pdfBytes}
+        baseName={baseName}
+        totalPages={totalPages}
+      />
     </div>
   );
 }
 
+/** Read total pages from scroll state — wrapped in a child component to avoid hook-order issues */
 function ViewerWithShortcuts({
   documentId,
   renderPage,
+  onTotalPagesChange,
 }: {
   documentId: string;
   renderPage: (page: PageLayout) => React.ReactNode;
+  onTotalPagesChange: (n: number) => void;
 }) {
   const { provides: bookmarkCapability } = useCapability<UserBookmarkPlugin>(
     UserBookmarkPlugin.id
   );
   const { state: scrollState } = useScroll(documentId);
+
+  useEffect(() => {
+    onTotalPagesChange(scrollState.totalPages);
+  }, [scrollState.totalPages, onTotalPagesChange]);
 
   // Ctrl+D: add bookmark at current page
   useEffect(() => {
@@ -161,3 +183,4 @@ function EmptyState() {
     </div>
   );
 }
+

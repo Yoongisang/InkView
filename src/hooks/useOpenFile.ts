@@ -1,6 +1,7 @@
 import { useRef, useCallback } from 'react';
 import { useDocumentManagerCapability } from '@embedpdf/plugin-document-manager/react';
 import { computeFileHash } from '../utils/file-hash';
+import { setLastFile } from '../plugins/split';
 
 /**
  * Provides an openFile() function that:
@@ -25,6 +26,7 @@ export function useOpenFile() {
       const file = e.target.files?.[0];
       if (!file || !docManager) return;
 
+      setLastFile(file); // save for pdf-lib operations (split/merge)
       const buffer = await file.arrayBuffer();
       const hash = await computeFileHash(buffer);
 
