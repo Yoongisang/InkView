@@ -15,6 +15,7 @@ import { ChevronUp, ChevronDown, X } from 'lucide-react';
 import { Toolbar } from './Toolbar';
 import { Sidebar } from './Sidebar';
 import { StatusBar } from './StatusBar';
+import { TabBar } from './TabBar';
 import { useOpenFile } from '../../hooks/useOpenFile';
 import { useElectronFile } from '../../hooks/useElectronFile';
 import { UserBookmarkPlugin } from '../../plugins/bookmark';
@@ -99,6 +100,9 @@ export function AppLayout() {
         onOpenMerge={() => setMergeOpen(true)}
         onOpenFile={openFile}
       />
+
+      {/* Tab bar — shown when at least one document is open */}
+      <TabBar />
 
       {/* Search bar — shown when searchVisible && document open */}
       {searchVisible && activeDocumentId && (
