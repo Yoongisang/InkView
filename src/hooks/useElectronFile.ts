@@ -2,28 +2,61 @@ import { useEffect } from 'react';
 import { useDocumentManagerCapability } from '@embedpdf/plugin-document-manager/react';
 import { computeFileHash } from '../utils/file-hash';
 
+interface ElectronFileData {
+  buffer: ArrayBuffer;
+  name: string;
+}
+
+interface ElectronAPI {
+  getOpenFile: () => Promise<ElectronFileData | null>;
+  onOpenFile: (cb: (data: ElectronFileData) => void) => void;
+}
+
+function getElectronAPI(): ElectronAPI | null {
+  return (window as { electronAPI?: ElectronAPI }).electronAPI ?? null;
+}
+
 /**
  * When InkView is used as the default PDF viewer on Windows/macOS,
- * Electron reads the file from argv and sends it via IPC.
- * This hook listens for that event and opens the PDF automatically.
+ * Electron passes the file via IPC.
+ *
+ * - Pull model (getOpenFile): for files passed at launch via argv.
+ *   Called once when docManager becomes available.
+ * - Push model (onOpenFile): for files opened while the app is running
+ *   (macOS Finder, Windows second-instance).
  */
 export function useElectronFile() {
   const { provides: docManager } = useDocumentManagerCapability();
 
   useEffect(() => {
-    // Only available inside Electron (preload exposes window.electronAPI)
-    const api = (window as { electronAPI?: { onOpenFile: (cb: (data: { buffer: ArrayBuffer; name: string }) => void) => void } }).electronAPI;
+    const api = getElectronAPI();
     if (!api || !docManager) return;
 
-    api.onOpenFile(async ({ buffer, name }) => {
+    const openPdf = async (data: ElectronFileData) => {
       try {
-        const hash = await computeFileHash(buffer);
+        const hash = await computeFileHash(data.buffer);
         docManager
-          .openDocumentBuffer({ buffer, name, documentId: hash, autoActivate: true })
-          .wait(() => {}, (err) => console.error('[InkView] Failed to open PDF from Electron:', err));
+          .openDocumentBuffer({
+            buffer: data.buffer,
+            name: data.name,
+            documentId: hash,
+            autoActivate: true,
+          })
+          .wait(
+            () => {},
+            (err) => console.error('[InkView] Failed to open PDF:', err)
+          );
       } catch (err) {
         console.error('[InkView] useElectronFile error:', err);
       }
+    };
+
+    // Pull: check if a file was passed at launch (argv)
+    api.getOpenFile().then((data) => {
+      if (data) openPdf(data);
     });
+
+    // Push: listen for files opened while the app is running
+    api.onOpenFile((data) => openPdf(data));
   }, [docManager]);
 }

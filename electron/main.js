@@ -22,23 +22,33 @@ function getPdfPathFromArgv() {
     .find(arg => !arg.startsWith('-') && arg.toLowerCase().endsWith('.pdf')) ?? null;
 }
 
-/** Send the file at filePath to the renderer window via IPC. */
-async function sendFileToRenderer(win, filePath) {
+/** Read a PDF file and return { buffer, name } for the renderer. */
+async function readPdfFile(filePath) {
+  const nodeBuffer = await readFile(filePath);
+  // Copy to a clean ArrayBuffer (avoid Node Buffer pooling issues)
+  const arrayBuffer = nodeBuffer.buffer.slice(
+    nodeBuffer.byteOffset,
+    nodeBuffer.byteOffset + nodeBuffer.byteLength
+  );
+  return { buffer: arrayBuffer, name: path.basename(filePath) };
+}
+
+// ── Pending file: set at launch from argv, consumed once by renderer ──
+let pendingPdfPath = getPdfPathFromArgv();
+let mainWindow = null;
+
+// Pull model: renderer calls this when its docManager is ready
+ipcMain.handle('get-open-file', async () => {
+  if (!pendingPdfPath) return null;
+  const filePath = pendingPdfPath;
+  pendingPdfPath = null; // consume — only opened once
   try {
-    const nodeBuffer = await readFile(filePath);
-    // Copy to a clean ArrayBuffer (avoid Node Buffer pooling issues)
-    const arrayBuffer = nodeBuffer.buffer.slice(
-      nodeBuffer.byteOffset,
-      nodeBuffer.byteOffset + nodeBuffer.byteLength
-    );
-    win.webContents.send('open-file', {
-      buffer: arrayBuffer,
-      name: path.basename(filePath),
-    });
+    return await readPdfFile(filePath);
   } catch (err) {
     console.error('[InkView] Failed to read PDF:', filePath, err);
+    return null;
   }
-}
+});
 
 app.whenReady().then(() => {
   const isDev = !app.isPackaged;
@@ -82,7 +92,7 @@ app.whenReady().then(() => {
     });
   }
 
-  const win = new BrowserWindow({
+  mainWindow = new BrowserWindow({
     width: 1280,
     height: 800,
     minWidth: 800,
@@ -95,31 +105,49 @@ app.whenReady().then(() => {
     },
   });
 
-  win.setMenuBarVisibility(false);
+  mainWindow.setMenuBarVisibility(false);
 
   if (isDev) {
-    win.loadURL('http://localhost:5173');
+    mainWindow.loadURL('http://localhost:5173');
   } else {
-    win.loadURL('app://localhost/index.html');
+    mainWindow.loadURL('app://localhost/index.html');
   }
 
-  // After renderer is ready, send the PDF file (if launched with one)
-  const pdfPath = getPdfPathFromArgv();
-  if (pdfPath) {
-    win.webContents.once('did-finish-load', () => {
-      // Small delay to let the React app initialize plugins
-      setTimeout(() => sendFileToRenderer(win, pdfPath), 500);
-    });
-  }
-
-  // macOS: handle files opened via Finder while app is already running
-  app.on('open-file', (event, filePath) => {
+  // macOS: handle files opened via Finder while the app is already running
+  app.on('open-file', async (event, filePath) => {
     event.preventDefault();
-    if (filePath.toLowerCase().endsWith('.pdf')) {
-      sendFileToRenderer(win, filePath);
+    if (!filePath.toLowerCase().endsWith('.pdf') || !mainWindow) return;
+    try {
+      const data = await readPdfFile(filePath);
+      mainWindow.webContents.send('open-file', data);
+    } catch (err) {
+      console.error('[InkView] open-file error:', err);
     }
   });
 });
+
+// Windows: handle second-instance when user opens another PDF while app is running
+const gotLock = app.requestSingleInstanceLock();
+if (!gotLock) {
+  app.quit();
+} else {
+  app.on('second-instance', async (_event, argv) => {
+    const filePath = argv
+      .slice(1)
+      .find(arg => !arg.startsWith('-') && arg.toLowerCase().endsWith('.pdf'));
+    if (filePath && mainWindow) {
+      try {
+        const data = await readPdfFile(filePath);
+        mainWindow.webContents.send('open-file', data);
+      } catch (err) {
+        console.error('[InkView] second-instance open error:', err);
+      }
+      // Focus the existing window
+      if (mainWindow.isMinimized()) mainWindow.restore();
+      mainWindow.focus();
+    }
+  });
+}
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();
