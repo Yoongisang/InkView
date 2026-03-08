@@ -17,10 +17,22 @@
   "build": {
     "appId": "com.yoongisang.inkview",
     "productName": "InkView",
-    "directories": { "output": "release" },
-    "files": ["electron/main.js", "electron/preload.cjs"],
-    "extraResources": [{ "from": "dist", "to": "dist" }],
-    "win": { "target": "portable" }
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "electron/main.js",
+      "electron/preload.cjs"
+    ],
+    "extraResources": [
+      {
+        "from": "dist",
+        "to": "dist"
+      }
+    ],
+    "win": {
+      "target": "portable"
+    }
   },
   "dependencies": {
     "@embedpdf/core": "^2.8.0",
@@ -47,6 +59,7 @@
     "@embedpdf/plugin-view-manager": "^2.8.0",
     "@embedpdf/plugin-viewport": "^2.8.0",
     "@embedpdf/plugin-zoom": "^2.8.0",
+    "@vercel/analytics": "^1.6.1",
     "dexie": "^4.0.11",
     "i18next": "^24.2.2",
     "lucide-react": "^0.511.0",
