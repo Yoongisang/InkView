@@ -12,40 +12,30 @@ import { Sidebar } from './Sidebar';
 import { StatusBar } from './StatusBar';
 import { useOpenFile } from '../../hooks/useOpenFile';
 import { UserBookmarkPlugin } from '../../plugins/bookmark';
-import { SplitDialog, usePdfBytes } from '../../plugins/split';
+import { SplitDialog, usePdfBytes, useLastFile } from '../../plugins/split';
+import { MergeDialog } from '../../plugins/merge';
 
 export function AppLayout() {
   const { activeDocumentId } = useRegistry();
   const [sidebarVisible, setSidebarVisible] = useState(true);
   const [, setSearchVisible] = useState(false);
   const [splitOpen, setSplitOpen] = useState(false);
+  const [mergeOpen, setMergeOpen] = useState(false);
   const [totalPages, setTotalPages] = useState(0);
   const { openFile, inputRef, handleFileChange } = useOpenFile();
   const { pdfBytes, baseName } = usePdfBytes(activeDocumentId);
+  const lastFile = useLastFile();
 
-  const toggleSidebar = useCallback(() => {
-    setSidebarVisible((v) => !v);
-  }, []);
-
-  const toggleSearch = useCallback(() => {
-    setSearchVisible((v) => !v);
-  }, []);
+  const toggleSidebar = useCallback(() => setSidebarVisible((v) => !v), []);
+  const toggleSearch = useCallback(() => setSearchVisible((v) => !v), []);
 
   // Global keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.ctrlKey && e.key === 'b') {
-        e.preventDefault();
-        setSidebarVisible((v) => !v);
-      }
-      if (e.ctrlKey && e.key === 'o') {
-        e.preventDefault();
-        openFile();
-      }
-      if (e.ctrlKey && e.shiftKey && e.key === 'S') {
-        e.preventDefault();
-        if (activeDocumentId) setSplitOpen(true);
-      }
+      if (e.ctrlKey && e.key === 'b') { e.preventDefault(); setSidebarVisible((v) => !v); }
+      if (e.ctrlKey && e.key === 'o') { e.preventDefault(); openFile(); }
+      if (e.ctrlKey && e.shiftKey && e.key === 'S') { e.preventDefault(); if (activeDocumentId) setSplitOpen(true); }
+      if (e.ctrlKey && e.shiftKey && e.key === 'M') { e.preventDefault(); setMergeOpen(true); }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
@@ -80,25 +70,18 @@ export function AppLayout() {
   return (
     <div className="flex h-full flex-col">
       {/* Hidden file input for hash-based file opener */}
-      <input
-        ref={inputRef}
-        type="file"
-        accept=".pdf"
-        className="hidden"
-        onChange={handleFileChange}
-      />
+      <input ref={inputRef} type="file" accept=".pdf" className="hidden" onChange={handleFileChange} />
 
       <Toolbar
         onToggleSearch={toggleSearch}
         onToggleSidebar={toggleSidebar}
         onOpenSplit={() => setSplitOpen(true)}
-        onOpenMerge={() => {}}
+        onOpenMerge={() => setMergeOpen(true)}
         onOpenFile={openFile}
       />
 
       <div className="flex min-h-0 flex-1">
         <Sidebar visible={sidebarVisible} />
-
         <div className="flex-1 bg-neutral-200">
           {activeDocumentId ? (
             <ViewerWithShortcuts
@@ -122,6 +105,11 @@ export function AppLayout() {
         baseName={baseName}
         totalPages={totalPages}
       />
+      <MergeDialog
+        open={mergeOpen}
+        onClose={() => setMergeOpen(false)}
+        initialFile={lastFile}
+      />
     </div>
   );
 }
@@ -136,9 +124,7 @@ function ViewerWithShortcuts({
   renderPage: (page: PageLayout) => React.ReactNode;
   onTotalPagesChange: (n: number) => void;
 }) {
-  const { provides: bookmarkCapability } = useCapability<UserBookmarkPlugin>(
-    UserBookmarkPlugin.id
-  );
+  const { provides: bookmarkCapability } = useCapability<UserBookmarkPlugin>(UserBookmarkPlugin.id);
   const { state: scrollState } = useScroll(documentId);
 
   useEffect(() => {
@@ -163,11 +149,7 @@ function ViewerWithShortcuts({
 
   return (
     <Viewport documentId={documentId} className="h-full w-full">
-      <Scroller
-        documentId={documentId}
-        renderPage={renderPage}
-        className="h-full w-full"
-      />
+      <Scroller documentId={documentId} renderPage={renderPage} className="h-full w-full" />
     </Viewport>
   );
 }
@@ -183,4 +165,3 @@ function EmptyState() {
     </div>
   );
 }
-
