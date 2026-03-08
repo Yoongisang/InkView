@@ -1,12 +1,14 @@
 import { useState, useCallback, useEffect } from 'react';
-import { useRegistry } from '@embedpdf/core/react';
+import { useRegistry, useCapability } from '@embedpdf/core/react';
 import { useTranslation } from 'react-i18next';
 import { Viewport } from '@embedpdf/plugin-viewport/react';
 import { Scroller, useScroll } from '@embedpdf/plugin-scroll/react';
 import { RenderLayer } from '@embedpdf/plugin-render/react';
 import { TilingLayer } from '@embedpdf/plugin-tiling/react';
 import type { PageLayout } from '@embedpdf/plugin-scroll';
-import { useCapability } from '@embedpdf/core/react';
+import { GlobalPointerProvider, PagePointerProvider } from '@embedpdf/plugin-interaction-manager/react';
+import { SelectionLayer } from '@embedpdf/plugin-selection/react';
+import { useZoom } from '@embedpdf/plugin-zoom/react';
 import { Toolbar } from './Toolbar';
 import { Sidebar } from './Sidebar';
 import { StatusBar } from './StatusBar';
@@ -61,6 +63,13 @@ export function AppLayout() {
             pageIndex={page.pageIndex}
             style={{ position: 'absolute', inset: 0 }}
           />
+          <PagePointerProvider
+            documentId={activeDocumentId}
+            pageIndex={page.pageIndex}
+            style={{ position: 'absolute', inset: 0 }}
+          >
+            <SelectionLayer documentId={activeDocumentId} pageIndex={page.pageIndex} />
+          </PagePointerProvider>
         </div>
       );
     },
@@ -126,10 +135,24 @@ function ViewerWithShortcuts({
 }) {
   const { provides: bookmarkCapability } = useCapability<UserBookmarkPlugin>(UserBookmarkPlugin.id);
   const { state: scrollState } = useScroll(documentId);
+  const { provides: zoomCapability } = useZoom(documentId);
 
   useEffect(() => {
     onTotalPagesChange(scrollState.totalPages);
   }, [scrollState.totalPages, onTotalPagesChange]);
+
+  // Ctrl+wheel: zoom in/out
+  useEffect(() => {
+    const handleWheel = (e: WheelEvent) => {
+      if (!e.ctrlKey && !e.metaKey) return;
+      e.preventDefault();
+      if (!zoomCapability) return;
+      if (e.deltaY < 0) zoomCapability.zoomIn();
+      else zoomCapability.zoomOut();
+    };
+    window.addEventListener('wheel', handleWheel, { passive: false });
+    return () => window.removeEventListener('wheel', handleWheel);
+  }, [zoomCapability]);
 
   // Ctrl+D: add bookmark at current page
   useEffect(() => {
@@ -149,7 +172,9 @@ function ViewerWithShortcuts({
 
   return (
     <Viewport documentId={documentId} className="h-full w-full">
-      <Scroller documentId={documentId} renderPage={renderPage} className="h-full w-full" />
+      <GlobalPointerProvider documentId={documentId} style={{ height: '100%' }}>
+        <Scroller documentId={documentId} renderPage={renderPage} className="h-full w-full" />
+      </GlobalPointerProvider>
     </Viewport>
   );
 }

@@ -15,7 +15,7 @@ export function ViewerProvider({ children }: ViewerProviderProps) {
     wasmUrl: '/pdfium/pdfium.wasm',
     // worker mode requires SharedArrayBuffer (COOP/COEP headers).
     // Fall back to main-thread mode when crossOriginIsolated is not set.
-    worker: !!window.crossOriginIsolated,
+    worker: false,
   });
   const [, setRegistry] = useState<PluginRegistry | null>(null);
 
