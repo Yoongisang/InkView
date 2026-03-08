@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { useRegistry, useCapability } from '@embedpdf/core/react';
 import { useTranslation } from 'react-i18next';
 import { Viewport } from '@embedpdf/plugin-viewport/react';
@@ -48,7 +48,6 @@ export function AppLayout() {
       if (!activeDocumentId) return null;
       return (
         <div
-          key={page.pageIndex}
           style={{
             position: 'absolute',
             left: page.x,
@@ -136,22 +135,37 @@ function ViewerWithShortcuts({
   const { provides: bookmarkCapability } = useCapability<UserBookmarkPlugin>(UserBookmarkPlugin.id);
   const { state: scrollState } = useScroll(documentId);
   const { provides: zoomCapability } = useZoom(documentId);
+  const accDeltaRef = useRef(0);
+  const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     onTotalPagesChange(scrollState.totalPages);
   }, [scrollState.totalPages, onTotalPagesChange]);
 
-  // Ctrl+wheel: zoom in/out
+  // Ctrl+wheel: smooth zoom via accumulated delta + debounce
   useEffect(() => {
     const handleWheel = (e: WheelEvent) => {
       if (!e.ctrlKey && !e.metaKey) return;
       e.preventDefault();
       if (!zoomCapability) return;
-      if (e.deltaY < 0) zoomCapability.zoomIn();
-      else zoomCapability.zoomOut();
+
+      // Accumulate delta (negative = zoom in, positive = zoom out)
+      accDeltaRef.current += e.deltaY;
+
+      if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+      debounceTimerRef.current = setTimeout(() => {
+        const acc = accDeltaRef.current;
+        accDeltaRef.current = 0;
+        // deltaY: negative = scroll up = zoom in (positive delta)
+        // Divide by 1000: 100px scroll ≈ 0.1 zoom step (same as one zoomIn/zoomOut)
+        zoomCapability.requestZoomBy(-acc / 1000);
+      }, 50);
     };
     window.addEventListener('wheel', handleWheel, { passive: false });
-    return () => window.removeEventListener('wheel', handleWheel);
+    return () => {
+      window.removeEventListener('wheel', handleWheel);
+      if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+    };
   }, [zoomCapability]);
 
   // Ctrl+D: add bookmark at current page
