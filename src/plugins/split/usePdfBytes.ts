@@ -22,14 +22,13 @@ export function usePdfBytes(documentId: string | null) {
   const [baseName, setBaseName] = useState('document');
 
   useEffect(() => {
-    if (!documentId || !_lastFile) {
-      setPdfBytes(null);
-      return;
-    }
+    if (!documentId || !_lastFile) return;
     const file = _lastFile;
-    setBaseName(file.name.replace(/\.pdf$/i, ''));
-    file.arrayBuffer().then((buf) => setPdfBytes(new Uint8Array(buf)));
+    file.arrayBuffer().then((buf) => {
+      setBaseName(file.name.replace(/\.pdf$/i, ''));
+      setPdfBytes(new Uint8Array(buf));
+    });
   }, [documentId]);
 
-  return { pdfBytes, baseName };
+  return { pdfBytes: documentId && _lastFile ? pdfBytes : null, baseName };
 }

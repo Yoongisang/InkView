@@ -5,7 +5,6 @@ import { reducer, initialState } from './reducer';
 import type { UserBookmarkPluginConfig, UserBookmarkState } from './types';
 import type { UserBookmarkAction } from './actions';
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const UserBookmarkPluginPackage: PluginPackage<
   UserBookmarkPlugin,
   UserBookmarkPluginConfig,
@@ -13,7 +12,7 @@ export const UserBookmarkPluginPackage: PluginPackage<
   UserBookmarkAction
 > = {
   manifest,
-  create(registry, _config) {
+  create(registry) {
     return new UserBookmarkPlugin(manifest.id, registry);
   },
   reducer: reducer as any, // eslint-disable-line @typescript-eslint/no-explicit-any

@@ -14,7 +14,7 @@ export interface UserBookmarkState {
   bookmarksByDocument: Record<string, UserBookmark[]>;
 }
 
-export interface UserBookmarkPluginConfig extends BasePluginConfig {}
+export type UserBookmarkPluginConfig = BasePluginConfig;
 
 export interface AddBookmarkParams {
   documentId: string;

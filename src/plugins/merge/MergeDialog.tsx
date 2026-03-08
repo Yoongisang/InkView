@@ -98,7 +98,6 @@ export function MergeDialog({ open, onClose, initialFile }: MergeDialogProps) {
     setError(null);
     try {
       const merged = await PDFDocument.create();
-      let pageOffset = 0;
 
       for (const mf of files) {
         const buffer = await mf.file.arrayBuffer();
@@ -109,7 +108,7 @@ export function MergeDialog({ open, onClose, initialFile }: MergeDialogProps) {
 
         // autoBookmark: pdf-lib outline API is low-level; skipped for now
         void autoBookmark;
-        pageOffset += pageCount;
+        void pageCount;
       }
 
       const outBytes = await merged.save();

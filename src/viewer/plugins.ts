@@ -21,7 +21,6 @@ import { UIPluginPackage } from '@embedpdf/plugin-ui';
 import { ViewManagerPluginPackage } from '@embedpdf/plugin-view-manager';
 import { UserBookmarkPluginPackage } from '../plugins/bookmark';
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const plugins = [
   { package: ViewportPluginPackage },
   { package: InteractionManagerPluginPackage },

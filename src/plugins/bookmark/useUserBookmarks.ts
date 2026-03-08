@@ -11,10 +11,7 @@ export function useUserBookmarks(documentId: string | null) {
   const [bookmarks, setBookmarks] = useState<UserBookmark[]>([]);
 
   useEffect(() => {
-    if (!documentId) {
-      setBookmarks([]);
-      return;
-    }
+    if (!documentId) return;
     const subscription = liveQuery(() =>
       db.userBookmarks.where('documentId').equals(documentId).sortBy('pageIndex')
     ).subscribe({
@@ -62,7 +59,7 @@ export function useUserBookmarks(documentId: string | null) {
   );
 
   return {
-    bookmarks,
+    bookmarks: documentId ? bookmarks : [],
     addBookmark,
     removeBookmark,
     updateBookmark,

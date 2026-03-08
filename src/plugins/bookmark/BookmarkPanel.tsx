@@ -58,7 +58,7 @@ export function BookmarkPanel() {
 
 function UserBookmarkList({ documentId }: { documentId: string | null }) {
   const { t } = useTranslation();
-  const scrollState = documentId ? useScroll(documentId) : null;
+  const scrollResult = useScroll(documentId ?? '');
   const { provides: scroll } = useScrollCapability();
   const { bookmarks, addBookmark, removeBookmark, updateBookmark, exportBookmarks, importBookmarks } =
     useUserBookmarks(documentId);
@@ -66,7 +66,7 @@ function UserBookmarkList({ documentId }: { documentId: string | null }) {
   const [editTitle, setEditTitle] = useState('');
   const importInputRef = useRef<HTMLInputElement>(null);
 
-  const currentPage = scrollState?.state.currentPage ?? 0;
+  const currentPage = documentId ? scrollResult.state.currentPage : 0;
 
   const handleGoToPage = (bm: UserBookmark) => {
     // pageIndex is 0-based; scrollToPage uses 1-based pageNumber

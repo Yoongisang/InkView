@@ -22,7 +22,9 @@ export class UserBookmarkPlugin extends BasePlugin<
     super(id, registry);
   }
 
-  async initialize(_config: UserBookmarkPluginConfig): Promise<void> {}
+  async initialize(): Promise<void> {
+    // no-op — bookmarks are loaded per-document via onDocumentLoaded
+  }
 
   protected buildCapability(): UserBookmarkCapability {
     return {
