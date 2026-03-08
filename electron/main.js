@@ -1,9 +1,21 @@
 import { app, BrowserWindow, session, protocol, net, ipcMain } from 'electron';
 import path from 'node:path';
-import { readFile } from 'node:fs/promises';
+import { readFile, writeFile } from 'node:fs/promises';
 import { pathToFileURL, fileURLToPath } from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+// ── Debug: log to file for diagnosing file-association issues ──
+const debugLogPath = path.join(app.getPath('userData'), 'debug-argv.log');
+function debugLog(msg) {
+  writeFile(debugLogPath, `[${new Date().toISOString()}] ${msg}\n`, { flag: 'a' }).catch(() => {});
+}
+// Start fresh log each launch
+writeFile(debugLogPath, '').catch(() => {});
+debugLog(`argv: ${JSON.stringify(process.argv)}`);
+debugLog(`cwd: ${process.cwd()}`);
+debugLog(`packaged: ${app.isPackaged}`);
+debugLog(`__dirname: ${__dirname}`);
 
 // Must be called before app.whenReady()
 protocol.registerSchemesAsPrivileged([{
@@ -36,15 +48,20 @@ async function readPdfFile(filePath) {
 // ── Pending file: set at launch from argv, consumed once by renderer ──
 let pendingPdfPath = getPdfPathFromArgv();
 let mainWindow = null;
+debugLog(`pendingPdfPath: ${pendingPdfPath}`);
 
 // Pull model: renderer calls this when its docManager is ready
 ipcMain.handle('get-open-file', async () => {
+  debugLog(`IPC get-open-file called. pendingPdfPath=${pendingPdfPath}`);
   if (!pendingPdfPath) return null;
   const filePath = pendingPdfPath;
   pendingPdfPath = null; // consume — only opened once
   try {
-    return await readPdfFile(filePath);
+    const data = await readPdfFile(filePath);
+    debugLog(`readPdfFile OK: name=${data.name}, bufferSize=${data.buffer.byteLength}`);
+    return data;
   } catch (err) {
+    debugLog(`readPdfFile FAILED: ${err}`);
     console.error('[InkView] Failed to read PDF:', filePath, err);
     return null;
   }
@@ -92,6 +109,9 @@ app.whenReady().then(() => {
     });
   }
 
+  const preloadPath = path.join(__dirname, 'preload.cjs');
+  debugLog(`preloadPath: ${preloadPath}`);
+
   mainWindow = new BrowserWindow({
     width: 1280,
     height: 800,
@@ -101,8 +121,17 @@ app.whenReady().then(() => {
     webPreferences: {
       contextIsolation: true,
       nodeIntegration: false,
-      preload: path.join(__dirname, 'preload.js'),
+      preload: preloadPath,
     },
+  });
+
+  // Detect preload script failures
+  mainWindow.webContents.on('preload-error', (_event, _preloadPath, error) => {
+    debugLog(`PRELOAD ERROR: ${error}`);
+  });
+
+  mainWindow.webContents.on('did-finish-load', () => {
+    debugLog('did-finish-load fired');
   });
 
   mainWindow.setMenuBarVisibility(false);
