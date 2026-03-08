@@ -9,10 +9,14 @@ import type { PageLayout } from '@embedpdf/plugin-scroll';
 import { GlobalPointerProvider, PagePointerProvider } from '@embedpdf/plugin-interaction-manager/react';
 import { SelectionLayer } from '@embedpdf/plugin-selection/react';
 import { useZoom } from '@embedpdf/plugin-zoom/react';
+import { useSearch } from '@embedpdf/plugin-search/react';
+import { SearchLayer } from '@embedpdf/plugin-search/react';
+import { ChevronUp, ChevronDown, X } from 'lucide-react';
 import { Toolbar } from './Toolbar';
 import { Sidebar } from './Sidebar';
 import { StatusBar } from './StatusBar';
 import { useOpenFile } from '../../hooks/useOpenFile';
+import { useElectronFile } from '../../hooks/useElectronFile';
 import { UserBookmarkPlugin } from '../../plugins/bookmark';
 import { SplitDialog, usePdfBytes, useLastFile } from '../../plugins/split';
 import { MergeDialog } from '../../plugins/merge';
@@ -20,11 +24,12 @@ import { MergeDialog } from '../../plugins/merge';
 export function AppLayout() {
   const { activeDocumentId } = useRegistry();
   const [sidebarVisible, setSidebarVisible] = useState(true);
-  const [, setSearchVisible] = useState(false);
+  const [searchVisible, setSearchVisible] = useState(false);
   const [splitOpen, setSplitOpen] = useState(false);
   const [mergeOpen, setMergeOpen] = useState(false);
   const [totalPages, setTotalPages] = useState(0);
   const { openFile, inputRef, handleFileChange } = useOpenFile();
+  useElectronFile(); // Handle PDF files opened via OS file association (Electron only)
   const { pdfBytes, baseName } = usePdfBytes(activeDocumentId);
   const lastFile = useLastFile();
 
@@ -36,6 +41,8 @@ export function AppLayout() {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.ctrlKey && e.key === 'b') { e.preventDefault(); setSidebarVisible((v) => !v); }
       if (e.ctrlKey && e.key === 'o') { e.preventDefault(); openFile(); }
+      if (e.ctrlKey && e.key === 'f') { e.preventDefault(); if (activeDocumentId) setSearchVisible((v) => !v); }
+      if (e.key === 'Escape') { setSearchVisible(false); }
       if (e.ctrlKey && e.shiftKey && e.key === 'S') { e.preventDefault(); if (activeDocumentId) setSplitOpen(true); }
       if (e.ctrlKey && e.shiftKey && e.key === 'M') { e.preventDefault(); setMergeOpen(true); }
     };
@@ -68,6 +75,11 @@ export function AppLayout() {
             style={{ position: 'absolute', inset: 0 }}
           >
             <SelectionLayer documentId={activeDocumentId} pageIndex={page.pageIndex} />
+            <SearchLayer
+              documentId={activeDocumentId}
+              pageIndex={page.pageIndex}
+              style={{ position: 'absolute', inset: 0 }}
+            />
           </PagePointerProvider>
         </div>
       );
@@ -87,6 +99,11 @@ export function AppLayout() {
         onOpenMerge={() => setMergeOpen(true)}
         onOpenFile={openFile}
       />
+
+      {/* Search bar — shown when searchVisible && document open */}
+      {searchVisible && activeDocumentId && (
+        <SearchBar documentId={activeDocumentId} onClose={() => setSearchVisible(false)} />
+      )}
 
       <div className="flex min-h-0 flex-1">
         <Sidebar visible={sidebarVisible} />
@@ -118,6 +135,95 @@ export function AppLayout() {
         onClose={() => setMergeOpen(false)}
         initialFile={lastFile}
       />
+    </div>
+  );
+}
+
+/** Search bar — mounts/unmounts with search session lifecycle */
+function SearchBar({ documentId, onClose }: { documentId: string; onClose: () => void }) {
+  const { t } = useTranslation();
+  const { state, provides: scope } = useSearch(documentId);
+  const [query, setQuery] = useState('');
+  const inputRef = useRef<HTMLInputElement>(null);
+  const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Start search session on mount, stop on unmount
+  useEffect(() => {
+    scope?.startSearch();
+    inputRef.current?.focus();
+    return () => {
+      scope?.stopSearch();
+    };
+  }, [scope]);
+
+  const runSearch = useCallback(
+    (val: string) => {
+      if (!scope || !val.trim()) return;
+      scope.searchAllPages(val).wait(() => {}, console.error);
+    },
+    [scope]
+  );
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setQuery(val);
+    if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
+    searchTimerRef.current = setTimeout(() => runSearch(val), 300);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      e.shiftKey ? scope?.previousResult() : scope?.nextResult();
+    }
+    if (e.key === 'Escape') {
+      onClose();
+    }
+  };
+
+  const resultText = () => {
+    if (!query.trim()) return '';
+    if (state.loading) return '검색 중...';
+    if (state.total === 0) return '결과 없음';
+    return `${state.activeResultIndex + 1} / ${state.total}`;
+  };
+
+  return (
+    <div className="flex items-center gap-2 border-b border-border bg-surface px-3 py-1.5">
+      <input
+        ref={inputRef}
+        value={query}
+        onChange={handleChange}
+        onKeyDown={handleKeyDown}
+        placeholder={t('toolbar.search') + '... (Enter: 다음, Shift+Enter: 이전)'}
+        className="min-w-0 flex-1 rounded border border-border bg-surface-alt px-2 py-1 text-sm text-text outline-none focus:border-primary"
+      />
+      {query && (
+        <span className="min-w-[80px] text-center text-xs text-text-muted">{resultText()}</span>
+      )}
+      <button
+        className="rounded p-1 text-text-muted hover:bg-surface-alt disabled:opacity-40"
+        onClick={() => scope?.previousResult()}
+        disabled={!state.total}
+        title="이전 결과 (Shift+Enter)"
+      >
+        <ChevronUp size={16} />
+      </button>
+      <button
+        className="rounded p-1 text-text-muted hover:bg-surface-alt disabled:opacity-40"
+        onClick={() => scope?.nextResult()}
+        disabled={!state.total}
+        title="다음 결과 (Enter)"
+      >
+        <ChevronDown size={16} />
+      </button>
+      <button
+        className="rounded p-1 text-text-muted hover:bg-surface-alt"
+        onClick={onClose}
+        title="닫기 (Esc)"
+      >
+        <X size={16} />
+      </button>
     </div>
   );
 }
@@ -174,9 +280,10 @@ function ViewerWithShortcuts({
       if (e.ctrlKey && e.key === 'd') {
         e.preventDefault();
         if (!bookmarkCapability) return;
-        const pageIndex = scrollState.currentPage;
+        // currentPage is 1-indexed (pageNumber); convert to 0-indexed pageIndex
+        const pageIndex = scrollState.currentPage - 1;
         bookmarkCapability
-          .addBookmark({ documentId, pageIndex, title: `페이지 ${pageIndex + 1}` })
+          .addBookmark({ documentId, pageIndex, title: `페이지 ${scrollState.currentPage}` })
           .catch(console.error);
       }
     };

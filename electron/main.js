@@ -1,5 +1,6 @@
-import { app, BrowserWindow, session, protocol, net } from 'electron';
+import { app, BrowserWindow, session, protocol, net, ipcMain } from 'electron';
 import path from 'node:path';
+import { readFile } from 'node:fs/promises';
 import { pathToFileURL, fileURLToPath } from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -9,6 +10,35 @@ protocol.registerSchemesAsPrivileged([{
   scheme: 'app',
   privileges: { secure: true, standard: true, supportFetchAPI: true, corsEnabled: true },
 }]);
+
+/**
+ * Find a PDF file path from process.argv.
+ * In packaged mode: argv = [executablePath, pdfPath?]
+ * In dev mode:      argv = [electronPath, '.', ...flags, pdfPath?]
+ */
+function getPdfPathFromArgv() {
+  return process.argv
+    .slice(1) // skip the executable itself
+    .find(arg => !arg.startsWith('-') && arg.toLowerCase().endsWith('.pdf')) ?? null;
+}
+
+/** Send the file at filePath to the renderer window via IPC. */
+async function sendFileToRenderer(win, filePath) {
+  try {
+    const nodeBuffer = await readFile(filePath);
+    // Copy to a clean ArrayBuffer (avoid Node Buffer pooling issues)
+    const arrayBuffer = nodeBuffer.buffer.slice(
+      nodeBuffer.byteOffset,
+      nodeBuffer.byteOffset + nodeBuffer.byteLength
+    );
+    win.webContents.send('open-file', {
+      buffer: arrayBuffer,
+      name: path.basename(filePath),
+    });
+  } catch (err) {
+    console.error('[InkView] Failed to read PDF:', filePath, err);
+  }
+}
 
 app.whenReady().then(() => {
   const isDev = !app.isPackaged;
@@ -58,7 +88,11 @@ app.whenReady().then(() => {
     minWidth: 800,
     minHeight: 600,
     title: 'InkView',
-    webPreferences: { contextIsolation: true, nodeIntegration: false },
+    webPreferences: {
+      contextIsolation: true,
+      nodeIntegration: false,
+      preload: path.join(__dirname, 'preload.js'),
+    },
   });
 
   win.setMenuBarVisibility(false);
@@ -68,6 +102,23 @@ app.whenReady().then(() => {
   } else {
     win.loadURL('app://localhost/index.html');
   }
+
+  // After renderer is ready, send the PDF file (if launched with one)
+  const pdfPath = getPdfPathFromArgv();
+  if (pdfPath) {
+    win.webContents.once('did-finish-load', () => {
+      // Small delay to let the React app initialize plugins
+      setTimeout(() => sendFileToRenderer(win, pdfPath), 500);
+    });
+  }
+
+  // macOS: handle files opened via Finder while app is already running
+  app.on('open-file', (event, filePath) => {
+    event.preventDefault();
+    if (filePath.toLowerCase().endsWith('.pdf')) {
+      sendFileToRenderer(win, filePath);
+    }
+  });
 });
 
 app.on('window-all-closed', () => {

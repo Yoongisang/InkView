@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useRegistry } from '@embedpdf/core/react';
-import { useScroll } from '@embedpdf/plugin-scroll/react';
+import { useScroll, useScrollCapability } from '@embedpdf/plugin-scroll/react';
 import { useBookmarkCapability } from '@embedpdf/plugin-bookmark/react';
 import { Bookmark, Trash2, Edit2, Download, Upload, Plus } from 'lucide-react';
 import { useUserBookmarks } from './useUserBookmarks';
@@ -59,6 +59,7 @@ export function BookmarkPanel() {
 function UserBookmarkList({ documentId }: { documentId: string | null }) {
   const { t } = useTranslation();
   const scrollState = documentId ? useScroll(documentId) : null;
+  const { provides: scroll } = useScrollCapability();
   const { bookmarks, addBookmark, removeBookmark, updateBookmark, exportBookmarks, importBookmarks } =
     useUserBookmarks(documentId);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -67,10 +68,16 @@ function UserBookmarkList({ documentId }: { documentId: string | null }) {
 
   const currentPage = scrollState?.state.currentPage ?? 0;
 
+  const handleGoToPage = (bm: UserBookmark) => {
+    // pageIndex is 0-based; scrollToPage uses 1-based pageNumber
+    scroll?.scrollToPage({ pageNumber: bm.pageIndex + 1 });
+  };
+
   const handleAdd = async () => {
     if (!documentId) return;
-    const pageNum = currentPage + 1;
-    await addBookmark(currentPage, `${t('statusbar.page')} ${pageNum}`);
+    // currentPage is 1-indexed pageNumber; store 0-indexed pageIndex
+    const pageNum = currentPage;
+    await addBookmark(currentPage - 1, `${t('statusbar.page')} ${pageNum}`);
   };
 
   const handleEdit = (bm: UserBookmark) => {
@@ -154,7 +161,8 @@ function UserBookmarkList({ documentId }: { documentId: string | null }) {
           {bookmarks.map((bm) => (
             <li
               key={bm.id}
-              className="group flex items-center gap-1 rounded px-1 py-1 hover:bg-surface-alt"
+              className="group flex cursor-pointer items-center gap-1 rounded px-1 py-1 hover:bg-surface-alt"
+              onClick={() => handleGoToPage(bm)}
             >
               <span
                 className="h-2 w-2 flex-shrink-0 rounded-full"
@@ -215,6 +223,7 @@ function UserBookmarkList({ documentId }: { documentId: string | null }) {
 function PdfOutlineList({ documentId }: { documentId: string | null }) {
   const { t } = useTranslation();
   const { provides: bookmarkCapability } = useBookmarkCapability();
+  const { provides: scroll } = useScrollCapability();
   const [outlineItems, setOutlineItems] = useState<OutlineItem[]>([]);
   const [loaded, setLoaded] = useState(false);
 
@@ -249,11 +258,21 @@ function PdfOutlineList({ documentId }: { documentId: string | null }) {
       {outlineItems.map((item, i) => (
         <li
           key={i}
-          className="flex items-center gap-1 rounded px-1 py-1 hover:bg-surface-alt"
+          className={`flex items-center gap-1 rounded px-1 py-1 hover:bg-surface-alt ${
+            item.pageNumber != null ? 'cursor-pointer' : ''
+          }`}
           style={{ paddingLeft: `${item.depth * 12 + 4}px` }}
+          onClick={() => {
+            if (item.pageNumber != null) {
+              scroll?.scrollToPage({ pageNumber: item.pageNumber });
+            }
+          }}
         >
           <Bookmark size={12} className="flex-shrink-0 text-text-muted" />
           <span className="min-w-0 flex-1 truncate text-xs text-text">{item.title}</span>
+          {item.pageNumber != null && (
+            <span className="text-xs text-text-muted">{item.pageNumber}</span>
+          )}
         </li>
       ))}
     </ul>
@@ -263,12 +282,20 @@ function PdfOutlineList({ documentId }: { documentId: string | null }) {
 interface OutlineItem {
   title: string;
   depth: number;
+  pageNumber?: number; // 1-based pageNumber for navigation
 }
 
-function flattenOutline(items: any[], depth: number): OutlineItem[] {
+function flattenOutline(items: any[], depth: number): OutlineItem[] { // eslint-disable-line @typescript-eslint/no-explicit-any
   const result: OutlineItem[] = [];
   for (const item of items) {
-    result.push({ title: item.title ?? '', depth });
+    // Extract page number from destination (0-based pageIndex → 1-based pageNumber)
+    let pageNumber: number | undefined;
+    if (item.target?.type === 'destination' && item.target.destination?.pageIndex != null) {
+      pageNumber = item.target.destination.pageIndex + 1;
+    } else if (item.target?.type === 'action' && item.target.action?.dest?.pageIndex != null) {
+      pageNumber = item.target.action.dest.pageIndex + 1;
+    }
+    result.push({ title: item.title ?? '', depth, pageNumber });
     if (item.children?.length) {
       result.push(...flattenOutline(item.children, depth + 1));
     }

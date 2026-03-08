@@ -41,7 +41,7 @@ function StatusBarContent({ documentId }: { documentId: string }) {
   return (
     <div className="flex items-center gap-4">
       <span className="text-xs text-text-muted">
-        {t('statusbar.page')} {scrollState.currentPage + 1} {t('statusbar.of')}{' '}
+        {t('statusbar.page')} {scrollState.currentPage} {t('statusbar.of')}{' '}
         {scrollState.totalPages}
       </span>
       <span className="text-xs text-text-muted">
