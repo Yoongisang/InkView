@@ -34,5 +34,8 @@ Thumbs.db
 # Testing
 coverage
 
+# Electron build output
+release/
+
 # PDFium WASM (downloaded at install time)
 public/pdfium/pdfium.wasm
