@@ -30,6 +30,12 @@ export function useOpenFile() {
       const buffer = await file.arrayBuffer();
       const hash = await computeFileHash(buffer);
 
+      if (docManager.isDocumentOpen(hash)) {
+        docManager.setActiveDocument(hash);
+        e.target.value = '';
+        return;
+      }
+
       docManager
         .openDocumentBuffer({
           buffer,

@@ -35,6 +35,12 @@ export function useElectronFile() {
     const openPdf = async (data: ElectronFileData) => {
       try {
         const hash = await computeFileHash(data.buffer);
+
+        if (docManager.isDocumentOpen(hash)) {
+          docManager.setActiveDocument(hash);
+          return;
+        }
+
         docManager
           .openDocumentBuffer({
             buffer: data.buffer,
