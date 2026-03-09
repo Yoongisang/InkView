@@ -23,7 +23,7 @@
 
 ### 웹 앱
 
-브라우저에서 [ink-view.vercel.app](https://ink-view.vercel.app/) 접속 후 PDF 파일을 열거나 드래그&드롭합니다.
+브라우저에서 [ink-view.vercel.app](https://ink-view.vercel.app/) 접속 후 PDF 파일을 엽니다.
 
 ### 데스크탑 앱 (Windows)
 
