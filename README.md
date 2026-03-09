@@ -1,73 +1,99 @@
-# React + TypeScript + Vite
+# InkView
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+빠르고 깔끔한 PDF 뷰어. 웹과 데스크탑(Windows) 모두 지원합니다.
 
-Currently, two official plugins are available:
+**웹 앱 → [ink-view.vercel.app](https://ink-view.vercel.app/)**
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+---
 
-## React Compiler
+## 주요 기능
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- **멀티탭** — 여러 PDF를 탭으로 동시에 열기
+- **검색** — 문서 내 텍스트 검색
+- **책갈피** — 페이지 저장 및 이동
+- **목차** — 문서 목차(TOC) 탐색
+- **썸네일** — 페이지 미리보기
+- **페이지 이동 / 확대·축소 / 회전 / 전체화면**
+- **PDF 분할·병합** — pdf-lib 기반
+- **파일 연결** — Windows에서 기본 PDF 뷰어로 설정 가능
 
-## Expanding the ESLint configuration
+---
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## 사용법
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+### 웹 앱
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+브라우저에서 [ink-view.vercel.app](https://ink-view.vercel.app/) 접속 후 PDF 파일을 열거나 드래그&드롭합니다.
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+### 데스크탑 앱 (Windows)
+
+1. [Releases](../../releases) 페이지에서 최신 `.exe` 설치 파일을 다운로드합니다.
+2. 설치 후 실행하면 됩니다.
+3. PDF 파일을 InkView와 연결하려면 파일 우클릭 → **연결 프로그램 → InkView** 선택 후 **항상 이 앱 사용**을 체크합니다.
+
+### 단축키
+
+| 단축키 | 기능 |
+|---|---|
+| `Ctrl + O` | 파일 열기 |
+| `Ctrl + F` | 검색 |
+| `Ctrl + 휠` | 확대 / 축소 |
+| `←` / `→` | 이전 / 다음 페이지 |
+| `F11` | 전체화면 |
+
+---
+
+## 개발 환경 설정
+
+### 요구사항
+
+- [Node.js](https://nodejs.org/) 18+
+- [pnpm](https://pnpm.io/)
+
+### 설치
+
+```bash
+git clone https://github.com/your-username/inkview.git
+cd inkview
+pnpm install
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+### 개발 서버 실행
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+```bash
+# 웹 앱 (브라우저)
+pnpm dev
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+# 데스크탑 앱 (Electron)
+pnpm electron:dev
 ```
+
+### 빌드
+
+```bash
+# 웹 앱 빌드
+pnpm build
+
+# 데스크탑 앱 패키징 (Windows .exe)
+pnpm electron:build
+```
+
+---
+
+## 기술 스택
+
+| 분류 | 라이브러리 |
+|---|---|
+| UI | React 18 + TypeScript + Tailwind CSS v4 |
+| PDF 렌더링 | [EmbedPDF](https://embedpdf.com/) (PDFium WASM) |
+| PDF 편집 | [pdf-lib](https://pdf-lib.js.org/) |
+| 데스크탑 | [Electron](https://www.electronjs.org/) |
+| 빌드 | [Vite](https://vite.dev/) |
+| 데이터 저장 | [Dexie](https://dexie.org/) (IndexedDB) |
+| 국제화 | [i18next](https://www.i18next.com/) |
+
+---
+
+## 라이선스
+
+MIT
